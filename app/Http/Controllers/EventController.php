@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 
 class EventController extends Controller
 {
@@ -32,7 +33,7 @@ class EventController extends Controller
         return view('events.create');
     }
 
-    protected function deleteImage($imgName)
+    protected function deleteEventImage(string $imgName)
     {
         $imagePath = dirname(__FILE__, 4) . '/public/img/events/' . $imgName;
 
@@ -43,13 +44,14 @@ class EventController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(int $id)
     {
         $requestId = DB::table('events')
-                    ->where('id', $id)
-                    ->first();
+            ->where('id', $id)
+            ->first();
 
-        if($this->deleteImage($requestId->image)) {
+        //Deleting the event image
+        if ($this->deleteEventImage($requestId->image)) {
             Event::findOrFail($id)->delete();
             $msg = 'Evento excluído com sucesso!';
         } else {
@@ -60,7 +62,7 @@ class EventController extends Controller
         return redirect('/dashboard')->with('msg', $msg);
     }
 
-    public function edit($id)
+    public function edit(int $id)
     {
         $event = Event::findOrFail($id);
 
@@ -86,10 +88,10 @@ class EventController extends Controller
         return view('products', ['search' => $search]);
     }
 
-    public function store(Request $request) 
+    public function store(Request $request)
     {
         $event = new Event;
-        
+
         $event->title = $request->title;
         $event->city = $request->city;
         $event->date = $request->date;
@@ -98,8 +100,7 @@ class EventController extends Controller
         $event->items = $request->items;
 
         // Image Upload
-        if ($request->hasFile('image') && $request->file('image')->isValid())
-        {
+        if ($request->hasFile('image') && $request->file('image')->isValid()) {
             $requestImage = $request->image;
 
             $extension = $requestImage->extension();
@@ -126,14 +127,16 @@ class EventController extends Controller
         $event = Event::findOrFail($id);
 
         $eventOwner = User::where('id', $event->user_id)
-        ->first()
-        ->toArray();
-        
-        return view('events.show', 
-                    [
-                        'event' => $event, 
-                        'eventOwner' => $eventOwner
-                    ]);
+            ->first()
+            ->toArray();
+
+        return view(
+            'events.show',
+            [
+                'event' => $event,
+                'eventOwner' => $eventOwner
+            ]
+        );
     }
 
     public function dashboard()
