@@ -6,10 +6,66 @@ use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redirect;
 
 class EventController extends Controller
 {
+    //Delete image event
+    protected function deleteEventImage(string $imgName): bool
+    {
+        $imagePath = dirname(__FILE__, 4) . '/public/img/events/' . $imgName;
+
+        if (!file_exists($imagePath)) {
+            return true;
+        } else {
+            return unlink($imagePath);
+        }
+    }
+
+    /**
+     * @param Request $request the request with a image to be uploaded
+     * 
+     * @param Event $event the event to be created in 'events' table.
+     * It's can be null if the method is called for update a existent Event.
+     * 
+     * on a new Event:
+     * 
+     *  @return true if everything going well
+     * 
+     *  @return false otherwise.
+     * 
+     * updating a existing Event:
+     * 
+     *  @return Array $data if it's a update case. 
+     *  Be sure to call the update method passing the returned $data Array
+     *  Example:
+     *      Event::findOrFail($request->id)->update($data); View the update method on this controller.
+     * 
+     */
+    protected function imageUpload(Request $request, Event $event = null): mixed
+    {
+
+        if ($request->hasFile('image') && $request->file('image')->isValid()) {
+
+            $requestImage = $request->image;
+
+            $extension = $requestImage->extension();
+
+            $imageName = md5($requestImage->getClientOriginalName() . strtotime('now')) . '.' . $extension;
+
+            $requestImage->move(public_path('img/events'), $imageName);
+
+            if (!$event) {
+                $data = $request->all();
+                $data['image'] = $imageName;
+                return $data;
+            } else {
+                $event->image = $imageName;
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function index()
     {
         $search = request('search');
@@ -31,17 +87,6 @@ class EventController extends Controller
     public function create()
     {
         return view('events.create');
-    }
-
-    protected function deleteEventImage(string $imgName)
-    {
-        $imagePath = dirname(__FILE__, 4) . '/public/img/events/' . $imgName;
-
-        if (!file_exists($imagePath)) {
-            return true;
-        } else {
-            return unlink($imagePath);
-        }
     }
 
     public function destroy(int $id)
@@ -71,9 +116,20 @@ class EventController extends Controller
 
     public function update(Request $request)
     {
-        Event::findOrFail($request->id)->update($request->all());
+        $data = $request->all();
 
-        return redirect('/dashboard')->with('msg', 'Evento atualizado com sucesso!');
+        if ($request->image) {
+            $this->deleteEventImage($request->image);
+            $data = $this->imageUpload($request);
+        }
+
+        if (Event::findOrFail($request->id)->update($data)) {
+            $msg = "Atualizado com sucesso";
+        } else {
+            $msg = "Erro ao atualizar evento";
+        }
+
+        return redirect('/dashboard')->with('msg', $msg);
     }
 
     public function contact()
@@ -99,25 +155,10 @@ class EventController extends Controller
         $event->description = $request->description;
         $event->items = $request->items;
 
-        // Image Upload
-        if ($request->hasFile('image') && $request->file('image')->isValid()) {
-            $requestImage = $request->image;
-
-            $extension = $requestImage->extension();
-
-            $imageName = md5($requestImage->getClientOriginalName() . strtotime('now')) . '.' . $extension;
-
-            $requestImage->move(public_path('img/events'), $imageName);
-
-            $event->image = $imageName;
-        }
-
         $user = auth()->user();
         $event->user_id = $user->id;
 
-        $event->save();
-
-        $msg = "Evento criado com sucesso!";
+        $msg = ($this->imageUpload($request, $event) && $event->save()) ? "Evento criado com sucesso!" : "Erro ao criar evento!";
 
         return redirect('/')->with('msg', $msg);
     }
