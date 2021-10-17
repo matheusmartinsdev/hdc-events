@@ -30,3 +30,5 @@ Route::post('/eventos', [EventController::class, 'store']);
 Route::get('/contato', [EventController::class, 'contact']);
 
 Route::get('/dashboard', [EventController::class, 'dashboard'])->middleware('auth');
+
+Route::post('/eventos/participar/{id}', [EventController::class, 'joinEvent'])->middleware('auth');

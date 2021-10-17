@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
 class EventController extends Controller
@@ -188,5 +189,16 @@ class EventController extends Controller
         $events = $user->events;
 
         return view('events.dashboard', ['events' => $events]);
+    }
+
+    public function joinEvent(int $id): RedirectResponse
+    {
+        $user = auth()->user();
+
+        $user->eventsAsParticipant()->attach($id);
+
+        $event = Event::findOrFail($id);
+
+        return redirect('/dashboard')->with('msg', 'Sua presença está confirmada em ' . $event->title);
     }
 }
