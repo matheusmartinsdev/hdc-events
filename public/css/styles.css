@@ -220,6 +220,14 @@ header {
     display: flex;
 }
 
+#info-container .joined-event {
+    background-color: #b0f4f7;
+    color: #067be9;
+    padding: 20px;
+    margin: 15px 0;
+    width: fit-content;
+}
+
 /* Dashboard */
 
 .dashboard-events-container form {

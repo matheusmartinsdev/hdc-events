@@ -16,6 +16,7 @@ class CreateEventUserTable extends Migration
         Schema::create('event_user', function (Blueprint $table) {
             $table->foreignId('event_id')->constrained();
             $table->foreignId('user_id')->constrained();
+
             $table->timestamps();
         });
     }
@@ -28,5 +29,14 @@ class CreateEventUserTable extends Migration
     public function down()
     {
         Schema::dropIfExists('event_user');
+        Schema::table('event_user', function (Blueprint $table) {
+            $table->foreignId('user_id')
+                ->constrained()
+                ->onDelete('cascade');
+
+            $table->foreignId('event_id')
+                ->constrained()
+                ->onDelete('cascade');
+        });
     }
 }

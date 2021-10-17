@@ -36,14 +36,16 @@
                 </li>
                 @endforeach
             </ul>
-
+            @if (! $hasUserJoined)
             <form action="/eventos/participar/{{ $event->id }}" method="post">
                 @csrf
                 <a href="/events/participar/{{ $event->id }}" class="btn btn-primary" id="event-submit"
                     onclick="event.preventDefault(); this.closest('form').submit();">
                     Confirmar Presença</a>
             </form>
-
+            @else
+            <p class="joined-event">Você já confirmou presença neste evento!</p>
+            @endif
         </div>
         <div class="row">
             <div class="col-md-12" id="description-container">
