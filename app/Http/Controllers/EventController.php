@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class EventController extends Controller
 {
@@ -23,25 +25,25 @@ class EventController extends Controller
 
     /**
      * @param Request $request the request with a image to be uploaded
-     * 
+     *
      * @param Event $event the event to be created in 'events' table.
      * It's can be null if the method is called for update a existent Event.
-     * 
+     *
      * on a new Event:
-     * 
-     *  @return true if everything going well
-     * 
+     *
+     *  @return array|bool if everything going well
+     *
      *  @return false otherwise.
-     * 
+     *
      * updating a existing Event:
-     * 
-     *  @return Array $data if it's a update case. 
+     *
+     *  @return Array $data if it's a update case.
      *  Be sure to call the update method passing the returned $data Array
      *  Example:
-     *      Event::findOrFail($request->id)->update($data); View the update method on this controller.
-     * 
+     *      Event::findOrFail($request->id)->update($data); See the update method on this controller.
+     *
      */
-    protected function imageUpload(Request $request, Event $event = null): mixed
+    protected function imageUpload(Request $request, Event $event = null): array|bool
     {
 
         if ($request->hasFile('image') && $request->file('image')->isValid()) {
@@ -66,7 +68,7 @@ class EventController extends Controller
         return false;
     }
 
-    public function index()
+    public function index(): View
     {
         $search = request('search');
 
@@ -84,20 +86,18 @@ class EventController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(): View
     {
         return view('events.create');
     }
 
-    public function destroy(int $id)
+    public function destroy(int $id): RedirectResponse
     {
-        $requestId = DB::table('events')
-            ->where('id', $id)
-            ->first();
+        $eventId = Event::findOrFail($id);
 
         //Deleting the event image
-        if ($this->deleteEventImage($requestId->image)) {
-            Event::findOrFail($id)->delete();
+        if ($this->deleteEventImage($eventId->image)) {
+            $eventId->delete();
             $msg = 'Evento excluído com sucesso!';
         } else {
             $msg = 'Erro ao excluir imagem do evento!';
@@ -107,23 +107,24 @@ class EventController extends Controller
         return redirect('/dashboard')->with('msg', $msg);
     }
 
-    public function edit(int $id)
+    public function edit(int $id): View
     {
         $event = Event::findOrFail($id);
 
         return view('events.create', ['event' => $event]);
     }
 
-    public function update(Request $request)
+    public function update(Request $request): RedirectResponse
     {
         $data = $request->all();
+        $event = Event::findOrFail($request->id);
 
         if ($request->image) {
-            $this->deleteEventImage($request->image);
+            $this->deleteEventImage($event->image);
             $data = $this->imageUpload($request);
         }
 
-        if (Event::findOrFail($request->id)->update($data)) {
+        if ($event->update($data)) {
             $msg = "Atualizado com sucesso";
         } else {
             $msg = "Erro ao atualizar evento";
@@ -132,19 +133,19 @@ class EventController extends Controller
         return redirect('/dashboard')->with('msg', $msg);
     }
 
-    public function contact()
+    public function contact(): View
     {
         return view('contact');
     }
 
-    public function products()
+    public function products(): View
     {
         $search = request('busca');
 
         return view('products', ['search' => $search]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $event = new Event;
 
@@ -163,7 +164,7 @@ class EventController extends Controller
         return redirect('/')->with('msg', $msg);
     }
 
-    public function show($id)
+    public function show($id): View
     {
         $event = Event::findOrFail($id);
 
@@ -180,7 +181,7 @@ class EventController extends Controller
         );
     }
 
-    public function dashboard()
+    public function dashboard(): View
     {
         $user = auth()->user();
 
